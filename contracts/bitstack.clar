@@ -167,3 +167,80 @@
 (define-private (is-valid-asset (asset (string-ascii 3)))
   (is-some (index-of VALID-ASSETS asset))
 )
+
+;; Price Validation
+;; Ensures price data is reasonable and non-zero
+(define-private (is-valid-price (price uint))
+  (and
+    (> price u0)
+    (<= price u1000000000000) ;; Reasonable upper bound
+  )
+)
+
+;; Loan Filtering Helper
+;; Helper function for filtering loan arrays
+(define-private (not-equal-loan-id (id uint))
+  (not (is-eq id id))
+)
+
+;; PUBLIC FUNCTIONS - PLATFORM ADMINISTRATION
+
+;; Initialize BitStack Protocol
+;; Initializes the platform - must be called before any operations
+(define-public (initialize-platform)
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (not (var-get platform-initialized)) ERR-ALREADY-INITIALIZED)
+    (var-set platform-initialized true)
+    (ok true)
+  )
+)
+
+;; Update Minimum Collateral Ratio
+;; Adjusts the minimum collateral ratio requirement for new loans
+(define-public (update-collateral-ratio (new-ratio uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (>= new-ratio u110) ERR-INVALID-AMOUNT)
+    (var-set minimum-collateral-ratio new-ratio)
+    (ok true)
+  )
+)
+
+;; Update Liquidation Threshold
+;; Modifies the threshold at which loans become eligible for liquidation
+(define-public (update-liquidation-threshold (new-threshold uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (>= new-threshold u100) ERR-INVALID-AMOUNT)
+    (var-set liquidation-threshold new-threshold)
+    (ok true)
+  )
+)
+
+;; Update Oracle Price Feed
+;; Updates price data from trusted oracle sources
+(define-public (update-price-feed
+    (asset (string-ascii 3))
+    (new-price uint)
+  )
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (is-valid-asset asset) ERR-INVALID-ASSET)
+    (asserts! (is-valid-price new-price) ERR-INVALID-PRICE)
+    (ok (map-set collateral-prices { asset: asset } { price: new-price }))
+  )
+)
+
+;; PUBLIC FUNCTIONS - LENDING OPERATIONS
+
+;; Deposit Collateral
+;; Deposits Bitcoin collateral into the protocol
+(define-public (deposit-collateral (amount uint))
+  (begin
+    (asserts! (var-get platform-initialized) ERR-NOT-INITIALIZED)
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    (var-set total-btc-locked (+ (var-get total-btc-locked) amount))
+    (ok true)
+  )
+)
