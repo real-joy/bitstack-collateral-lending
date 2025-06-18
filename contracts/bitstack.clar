@@ -328,3 +328,34 @@
     )
   )
 )
+
+;; READ-ONLY FUNCTIONS - DATA QUERIES
+
+;; Get Loan Details
+;; Retrieves complete information about a specific loan
+(define-read-only (get-loan-details (loan-id uint))
+  (map-get? loans { loan-id: loan-id })
+)
+
+;; Get User's Active Loans
+;; Returns all active loans for a specific user
+(define-read-only (get-user-loans (user principal))
+  (map-get? user-loans { user: user })
+)
+
+;; Get Platform Statistics
+;; Returns current platform metrics and configuration
+(define-read-only (get-platform-stats)
+  {
+    total-btc-locked: (var-get total-btc-locked),
+    total-loans-issued: (var-get total-loans-issued),
+    minimum-collateral-ratio: (var-get minimum-collateral-ratio),
+    liquidation-threshold: (var-get liquidation-threshold),
+  }
+)
+
+;; Get Supported Assets
+;; Returns list of assets supported for collateral
+(define-read-only (get-valid-assets)
+  VALID-ASSETS
+)
